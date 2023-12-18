@@ -6,17 +6,22 @@
 //
 
 import AVFAudio
+import PhotosUI
 import SwiftUI
 
 struct ContentView: View {
     @State private var audioPlayer: AVAudioPlayer!
     @State private var animateImage = true
     
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var bipImage = Image("clown")
+    
+    
     var body: some View {
         VStack {
             Spacer()
             
-            Image("clown")
+            bipImage
                 .resizable()
                 .scaledToFit()
                 .scaleEffect(animateImage ? 1.0 : 0.9)
@@ -30,10 +35,21 @@ struct ContentView: View {
             
             Spacer()
             
-            Button {
-                
-            } label: {
+            PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .automatic) {
                 Label("Photo Library", systemImage: "photo.fill.on.rectangle.fill")
+            }
+            .onChange(of: selectedPhoto) { oldValue, newValue in
+                Task {
+                    do {
+                        if let data = try await newValue?.loadTransferable(type: Data.self) {
+                            if let uiImage = UIImage(data: data) {
+                                bipImage = Image(uiImage: uiImage)
+                            }
+                        }
+                    } catch {
+                        print("🤬 ERROR: loading failed \(error.localizedDescription)")
+                    }
+                }
             }
         }
         .padding()
